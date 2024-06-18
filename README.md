@@ -24,12 +24,12 @@ which implicitly measure the enhancement quality and guide the training of the n
 The **LoL Dataset** has been created for low-light image enhancement. It provides 485
 images for training and 15 for testing. Each image pair in the dataset consists of a
 low-light input image and its corresponding well-exposed reference image.
-"""
+
 We use 300 low-light images from the LoL Dataset training set for training, and we use
 the remaining 185 low-light images for validation. We resize the images to size `256 x
 256` to be used for both training and validation. Note that in order to train the DCE-Net,
 we will not require the corresponding enhanced images.
-"""
+
 
 
 ## The Zero-DCE Framework
@@ -95,9 +95,7 @@ To restrain under-/over-exposed regions, we use the *exposure control loss*.
 It measures the distance between the average intensity value of a local region
 and a preset well-exposedness level (set to `0.6`).
 
-"""
 ### Illumination smoothness loss
 
 To preserve the monotonicity relations between neighboring pixels, the
 *illumination smoothness loss* is added to each curve parameter map.
-"""
