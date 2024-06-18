@@ -89,7 +89,6 @@ enhanced image.
 
     L_col = tf.sqrt(tf.square(diff_rg) + tf.square(diff_rb) + tf.square(diff_gb))
     return  L_col
-"""
 ### Exposure loss
 
 To restrain under-/over-exposed regions, we use the *exposure control loss*.
@@ -97,8 +96,8 @@ It measures the distance between the average intensity value of a local region
 and a preset well-exposedness level (set to `0.6`).
 
 """
-def exposure_loss(x, E=0.6):  # E is the grey level in RGB color generally taken as 0.6 for experiments
-    x = tf.reduce_mean(x, axis=3, keepdims=True)
-    mean = tf.nn.avg_pool2d(x, ksize=16, strides=16, padding="VALID") #averaging over 16x16 non-overlapping regions
-    L_exp = tf.reduce_mean(tf.square(mean - E)) #took the mean of all the values
-    return L_exp
+### Illumination smoothness loss
+
+To preserve the monotonicity relations between neighboring pixels, the
+*illumination smoothness loss* is added to each curve parameter map.
+"""
