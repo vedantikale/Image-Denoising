@@ -42,4 +42,90 @@ the remaining 185 low-light images for validation. We resize the images to size 
 we will not require the corresponding enhanced images.
 """
 
+IMAGE_SIZE = 256
+BATCH_SIZE = 32
+MAX_TRAIN_IMAGES = 400
+
+def load_data(image_path):
+    img = tf.io.read_file(image_path)
+    img = tf.image.decode_png(img, channels=3)
+    img = tf.image.resize(images=img, size=[IMAGE_SIZE, IMAGE_SIZE])
+    img = img / 255.0  #scaling between [0,1]
+    return img
+
+def data_generator(low_light_images):
+    data = tf.data.Dataset.from_tensor_slices((low_light_images))
+    data = data.map(load_data, num_parallel_calls=tf.data.AUTOTUNE)
+    data = data.batch(BATCH_SIZE, drop_remainder=True)
+    return data
+
+train_low_light_images = sorted(glob("/content/drive/MyDrive/lol_dataset/our485/low/*"))[:MAX_TRAIN_IMAGES]
+val_low_light_images = sorted(glob("/content/drive/MyDrive/lol_dataset/our485/low/*"))[MAX_TRAIN_IMAGES:]
+
+test_low_light_images = sorted(glob("/content/drive/MyDrive/Train/low/*"))
+test_high_light_images = sorted(glob("/content/drive/MyDrive/Train/high/*"))
+
+
+train_dataset = data_generator(train_low_light_images)
+val_dataset = data_generator(val_low_light_images)
+
+print("Train Dataset:", train_dataset)
+print("Validation Dataset:", val_dataset)    
+
+## The Zero-DCE Framework
+
+The goal of DCE-Net is to estimate a set of best-fitting light-enhancement curves
+(LE-curves) given an input image. The framework then maps all pixels of the input’s RGB
+channels by applying the curves iteratively to obtain the final enhanced image.
+
+### Understanding light-enhancement curves
+
+A ligh-enhancement curve is a kind of curve that can map a low-light image
+to its enhanced version automatically,
+where the self-adaptive curve parameters are solely dependent on the input image.
+When designing such a curve, three objectives should be taken into account:
+
+- Each pixel value of the enhanced image should be in the normalized range `[0,1]`, in order to
+avoid information loss induced by overflow truncation.
+- It should be monotonous, to preserve the contrast between neighboring pixels.
+- The shape of this curve should be as simple as possible,
+and the curve should be differentiable to allow backpropagation.
+
+The light-enhancement curve is separately applied to three RGB channels instead of solely on the
+illumination channel. The three-channel adjustment can better preserve the inherent color and reduce
+the risk of over-saturation.
+
+![](https://li-chongyi.github.io/Zero-DCE_files/framework.png)
+
+### DCE-Net
+
+The DCE-Net is a lightweight deep neural network that learns the mapping between an input
+image and its best-fitting curve parameter maps. The input to the DCE-Net is a low-light
+image while the outputs are a set of pixel-wise curve parameter maps for corresponding
+higher-order curves. It is a plain CNN of seven convolutional layers with symmetrical
+concatenation. Each layer consists of 32 convolutional kernels of size 3×3 and stride 1
+followed by the ReLU activation function. The last convolutional layer is followed by the
+Tanh activation function, which produces 24 parameter maps for 8 iterations, where each
+iteration requires three curve parameter maps for the three channels.
+
+![](https://i.imgur.com/HtIg34W.png)
+"""
+def Build_DCE_NET():
+    input_img = Input(shape=[None, None, 3])
+    x1 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(input_img)
+    x2 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x1)
+    x3 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x2)
+    x4 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x3)
+
+    int_x1 = Concatenate(axis=-1)([x4, x3])
+    x5 = layers.Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(int_x1)
+
+    int_x2 = Concatenate(axis=-1)([x5, x2])
+    x6 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(int_x2)
+
+    int_x3 = Concatenate(axis=-1)([x6, x1])
+    y = Conv2D(24, (3, 3), strides=(1, 1), activation="tanh", padding="same")(int_x3)
+
+    return Model(inputs=input_img, outputs=y)
+
 
