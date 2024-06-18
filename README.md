@@ -42,35 +42,6 @@ the remaining 185 low-light images for validation. We resize the images to size 
 we will not require the corresponding enhanced images.
 """
 
-IMAGE_SIZE = 256
-BATCH_SIZE = 32
-MAX_TRAIN_IMAGES = 400
-
-def load_data(image_path):
-    img = tf.io.read_file(image_path)
-    img = tf.image.decode_png(img, channels=3)
-    img = tf.image.resize(images=img, size=[IMAGE_SIZE, IMAGE_SIZE])
-    img = img / 255.0  #scaling between [0,1]
-    return img
-
-def data_generator(low_light_images):
-    data = tf.data.Dataset.from_tensor_slices((low_light_images))
-    data = data.map(load_data, num_parallel_calls=tf.data.AUTOTUNE)
-    data = data.batch(BATCH_SIZE, drop_remainder=True)
-    return data
-
-train_low_light_images = sorted(glob("/content/drive/MyDrive/lol_dataset/our485/low/*"))[:MAX_TRAIN_IMAGES]
-val_low_light_images = sorted(glob("/content/drive/MyDrive/lol_dataset/our485/low/*"))[MAX_TRAIN_IMAGES:]
-
-test_low_light_images = sorted(glob("/content/drive/MyDrive/Train/low/*"))
-test_high_light_images = sorted(glob("/content/drive/MyDrive/Train/high/*"))
-
-
-train_dataset = data_generator(train_low_light_images)
-val_dataset = data_generator(val_low_light_images)
-
-print("Train Dataset:", train_dataset)
-print("Validation Dataset:", val_dataset)    
 
 ## The Zero-DCE Framework
 
