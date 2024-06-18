@@ -100,11 +100,4 @@ and a preset well-exposedness level (set to `0.6`).
 To preserve the monotonicity relations between neighboring pixels, the
 *illumination smoothness loss* is added to each curve parameter map.
 
-psnr_ratio = []
-for i in range(len(test_low_light_images)):
-    low_light_image = Image.open(test_low_light_images[i])
-    enhanced_image = low_to_high_light(low_light_image)
-    high_light_image = Image.open(test_high_light_images[i])
-    psnr = calculate_psnr(high_light_image, enhanced_image)
-    psnr_ratio.append(psnr)
-    #print(f"PSNR for {test_low_light_images[i]}: {psnr}")
+
