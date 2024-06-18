@@ -70,7 +70,8 @@ iteration requires three curve parameter maps for the three channels.
 
 ![](https://i.imgur.com/HtIg34W.png)
 
-def Build_DCE_NET():
+ 
+ def Build_DCE_NET():
     input_img = Input(shape=[None, None, 3])
     x1 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(input_img)
     x2 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x1)
@@ -92,6 +93,7 @@ def Build_DCE_NET():
 
 The *color constancy loss* is used to correct the potential color deviations in the
 enhanced image.
+  
   def color_constancy_loss(x):
     mean_rgb = tf.reduce_mean(x, axis=(1, 2), keepdims=True)
     jr, jg, jb = (
