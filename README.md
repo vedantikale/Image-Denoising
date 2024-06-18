@@ -19,23 +19,12 @@ it does not require any input/output image pairs during training.
 This is achieved through a set of carefully formulated non-reference loss functions,
 which implicitly measure the enhancement quality and guide the training of the network.
 
-## Downloading LOLDataset
+## Dataset
 
 The **LoL Dataset** has been created for low-light image enhancement. It provides 485
 images for training and 15 for testing. Each image pair in the dataset consists of a
 low-light input image and its corresponding well-exposed reference image.
 """
-import os
-import numpy as np
-from glob import glob
-from PIL import Image, ImageOps
-import matplotlib.pyplot as plt
-import keras
-from keras import layers
-from keras.layers import Input,Conv2D,Concatenate
-from keras.models import Model
-import tensorflow as tf
-
 We use 300 low-light images from the LoL Dataset training set for training, and we use
 the remaining 185 low-light images for validation. We resize the images to size `256 x
 256` to be used for both training and validation. Note that in order to train the DCE-Net,
@@ -99,4 +88,34 @@ def Build_DCE_NET():
 
     return Model(inputs=input_img, outputs=y)
 
+### Color constancy loss
 
+The *color constancy loss* is used to correct the potential color deviations in the
+enhanced image.
+"""def color_constancy_loss(x):
+    mean_rgb = tf.reduce_mean(x, axis=(1, 2), keepdims=True)
+    jr, jg, jb = (
+        mean_rgb[:, :, :, 0],
+        mean_rgb[:, :, :, 1],
+        mean_rgb[:, :, :, 2],
+    )
+    #ji denotes average intensity of ith channel
+    #pairwise taking squares
+    diff_rg = tf.square(jr - jg)
+    diff_rb = tf.square(jr - jb)
+    diff_gb = tf.square(jb - jg)
+
+    L_col = tf.sqrt(tf.square(diff_rg) + tf.square(diff_rb) + tf.square(diff_gb))
+    return  L_col
+
+### Exposure loss
+
+To restrain under-/over-exposed regions, we use the *exposure control loss*.
+It measures the distance between the average intensity value of a local region
+and a preset well-exposedness level (set to `0.6`).
+
+def exposure_loss(x, E=0.6):  # E is the grey level in RGB color generally taken as 0.6 for experiments
+    x = tf.reduce_mean(x, axis=3, keepdims=True)
+    mean = tf.nn.avg_pool2d(x, ksize=16, strides=16, padding="VALID") #averaging over 16x16 non-overlapping regions
+    L_exp = tf.reduce_mean(tf.square(mean - E)) #took the mean of all the values
+    return L_exp
