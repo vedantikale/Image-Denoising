@@ -70,13 +70,6 @@ iteration requires three curve parameter maps for the three channels.
 
 ![](https://i.imgur.com/HtIg34W.png)
 
- 
- def Build_DCE_NET():
-    input_img = Input(shape=[None, None, 3])
-    x1 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(input_img)
-    x2 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x1)
-    x3 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x2)
-    x4 = Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(x3)
 
     int_x1 = Concatenate(axis=-1)([x4, x3])
     x5 = layers.Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same")(int_x1)
@@ -93,29 +86,17 @@ iteration requires three curve parameter maps for the three channels.
 
 The *color constancy loss* is used to correct the potential color deviations in the
 enhanced image.
-  
-  def color_constancy_loss(x):
-    mean_rgb = tf.reduce_mean(x, axis=(1, 2), keepdims=True)
-    jr, jg, jb = (
-        mean_rgb[:, :, :, 0],
-        mean_rgb[:, :, :, 1],
-        mean_rgb[:, :, :, 2],
-    )
-    #ji denotes average intensity of ith channel
-    #pairwise taking squares
-    diff_rg = tf.square(jr - jg)
-    diff_rb = tf.square(jr - jb)
-    diff_gb = tf.square(jb - jg)
 
     L_col = tf.sqrt(tf.square(diff_rg) + tf.square(diff_rb) + tf.square(diff_gb))
     return  L_col
-
+"""
 ### Exposure loss
 
 To restrain under-/over-exposed regions, we use the *exposure control loss*.
 It measures the distance between the average intensity value of a local region
 and a preset well-exposedness level (set to `0.6`).
 
+"""
 def exposure_loss(x, E=0.6):  # E is the grey level in RGB color generally taken as 0.6 for experiments
     x = tf.reduce_mean(x, axis=3, keepdims=True)
     mean = tf.nn.avg_pool2d(x, ksize=16, strides=16, padding="VALID") #averaging over 16x16 non-overlapping regions
